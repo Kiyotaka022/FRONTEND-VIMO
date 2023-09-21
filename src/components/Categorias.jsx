@@ -1,7 +1,7 @@
 import './table.css';
 import Button from './Button'
 import Toggle from './Toggle.jsx'
-import Pagination from './pagination';
+import Pagination from './Pagination';
 import Fail from './FailMenssage'
 
 

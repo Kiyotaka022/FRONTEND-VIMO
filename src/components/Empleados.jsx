@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen,faCircleXmark } from '@fortawesome/free-solid-svg-icons'
 
 import { useState, useEffect } from 'react';
-import Pagination from './pagination';
+import Pagination from './Pagination';
 import Button from './Button';
 import Toggle from './Toggle'
 import Fail from './FailMenssage'

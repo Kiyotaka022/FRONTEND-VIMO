@@ -2,6 +2,7 @@ import './table.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen,faCircleXmark, faSocks } from '@fortawesome/free-solid-svg-icons'
 
+import Pagination from './Pagination';
 import Button from './Button';
 import Toggle from './Toggle'
 import Fail from './FailMenssage'
@@ -271,6 +272,7 @@ export default function Productos({dialog, setDialog}) {
     ): <h1 className='text-4xl'>Cargando</h1>}
 
 </div>   
+<div className='self-center'><Pagination></Pagination></div>  
         </div>
     
     </>

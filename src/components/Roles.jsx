@@ -2,7 +2,6 @@ import './table.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen,faCircleXmark, faSocks } from '@fortawesome/free-solid-svg-icons'
 
-import Pagination from './pagination';
 import Button from './Button';
 import Toggle from './Toggle'
 import Fail from './FailMenssage'

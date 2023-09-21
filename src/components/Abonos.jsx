@@ -1,6 +1,6 @@
 import './table.css'
 import Button from './Button'
-import Pagination from './pagination'
+import Pagination from './Pagination'
 import Toggle from './Toggle.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faCircleXmark } from '@fortawesome/free-solid-svg-icons'

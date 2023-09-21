@@ -1,5 +1,5 @@
 import './table.css';
-import Pagination from './pagination';
+import Pagination from './Pagination';
 
 export default function Pedidos({dialog}) {
   return (
