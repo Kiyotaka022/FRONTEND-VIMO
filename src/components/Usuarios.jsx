@@ -2,7 +2,7 @@ import './table.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen,faCircleXmark } from '@fortawesome/free-solid-svg-icons'
 import { useState } from 'react';
-import Pagination from './pagination';
+import Pagination from './Pagination';
 
 function Dialog({setEmpleados, setDialog}) {
 
