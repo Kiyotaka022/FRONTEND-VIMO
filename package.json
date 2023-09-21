@@ -8,6 +8,8 @@
     "dev": "vite",
     "start": "npm run dev",
     "build": "vite build",
+    "predeploy":"npm run build",
+    "deploy":"gh-pages -d build",
     "preview": "vite preview"
   },
   "dependencies": {
