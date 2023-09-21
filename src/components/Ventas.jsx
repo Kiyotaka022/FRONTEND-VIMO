@@ -1,21 +1,51 @@
 import './table.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPen, faSocks, faCircleXmark } from '@fortawesome/free-solid-svg-icons'
-import { useState, useRef } from 'react';
+import { faPen,faCircleXmark, faSocks, faTrash } from '@fortawesome/free-solid-svg-icons'
+
 import Pagination from './Pagination';
+import Button from './Button';
+import Toggle from './Toggle'
+import Fail from './FailMenssage'
+
+import { useState, useEffect, useRef } from 'react';
+import { useFetch } from '../hooks/useFetch';
+import { PromiseFetchGET, PromiseFetchPOST, PromiseFetchPUT } from '../logic/fetchs';
 
 
-function AddProdu({setDetalle, setShowProdu}) {
+function AddProdu({setDetalle, setShowProdu, setDialog, setError}) {
     const tallasD = useRef(null)
-    function handleSubmit(event){
+    const categoriaId = useRef(null)
+    const [loading, setLoading]= useState(true)
+    const [categorias, setCategorias]= useState([])
+    const [thereIs, setThereIS] = useState(false)
+
+    if(loading===true){
+        getCategorias()
+    }
+    function handleClose(){
+        setShowProdu(false)
+    }
+
+    async function getCategorias(){
+            let res = await PromiseFetchGET('https://api-vimo-production.up.railway.app/categorias')
+            setCategorias(res.allData)
+            setLoading(false)
+    }
+
+    function handleOnChange(event){
+        setThereIS((prev)=>(!prev)) 
+      }
+
+    async function handleSubmit(event){
         event.preventDefault()
-        const {id}= Object.fromEntries(new FormData(event.currentTarget))
+        if(!thereIs){
+            
+        const {id, nombre, valorUnitario, categoria, descripcion}= Object.fromEntries(new FormData(event.currentTarget))
         const inputs=tallasD.current.querySelectorAll('input');
         const medidas=tallasD.current.querySelectorAll('label');
         const tallas={}
         let cantidad=0
         let zeros=0
-
         for(let i=0; i<inputs.length;i++){
             tallas[medidas[i].innerText]=Number(inputs[i].value)
             cantidad+=tallas[medidas[i].innerText]
@@ -23,93 +53,325 @@ function AddProdu({setDetalle, setShowProdu}) {
                 zeros+=1
             }
         }
-
+        
+        let categoriad = categoriaId.current.value
         if(zeros===inputs.length){
-            alert("Al menos alguna talla")
+            setError("Selecciona al menos una talla")
             return
         }
 
-        setDetalle((prev)=>{
+             let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/productos/${id}`)
+    if(res.message!="Producto no encontrado"){
+        console.log("A")
+        setError('Este Id de producto ya existe en la base de datos')
+        return
+    }
+
+     res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/categorias/${categoriad}`)
+
+
+    setDetalle((prev)=>{
             return(
                 [...prev,
                 {
                     id:id,
+                    nombre:nombre,
+                    descripcion:descripcion,
+                    valorUnitario:valorUnitario,
+                    categoria:categoriad,
+                    categorias:{id:res.one.id, nombre:res.one.nombre},
+                    cantidad:cantidad,
                     tallas:tallas,
-                    cantidad:cantidad
+                    estadoProducto:true,
+                    valorTotal:(Number(cantidad)*Number(valorUnitario))
                 }]
             )
         })
-        setShowProdu(false)
+
+    setShowProdu(false)
+        }else{
+            const {id}= Object.fromEntries(new FormData(event.currentTarget))
+            const inputs=tallasD.current.querySelectorAll('input');
+            const medidas=tallasD.current.querySelectorAll('label');
+            const tallas={}
+            let cantidad=0
+            let zeros=0
     
+            for(let i=0; i<inputs.length;i++){
+                tallas[medidas[i].innerText]=Number(inputs[i].value)
+                cantidad+=tallas[medidas[i].innerText]
+                if(Number(inputs[i].value)===0){
+                    zeros+=1
+                }
+            }
+
+            if(zeros===inputs.length){
+                setError("Selecciona al menos una talla")
+                return
+            }
+    
+        let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/productos/${id}`)
+        if(res.message){
+            setError('Este producto no existe en la base de datos')
+            return
+        }
+        let valorUnitario= res.one[0].valorUnitario
+
+        console.log(res)
+
+        setDetalle((prev)=>{
+                return(
+                    [...prev,
+                    {
+                        ...res.one[0],
+                        categoria:res.one[0].categorias.id,
+                        cantidad:cantidad,
+                        tallas:tallas,
+                        valorTotal:(Number(cantidad)*Number(valorUnitario))
+                    }]
+                )
+            })
+    
+        setShowProdu(false)
+
+
+
+        }
     }
-    return (
+
+return (
       <>
-      <dialog className="AMODAL container border-2 border-black rounded-2xl w-[650px] bg-Rwhite py-3 top-[10px]" open>
-                    
+      <dialog className="AMODAL container border-2 border-blue-600 rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
+        <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={handleClose}/></button>
                     <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Producto</span>
+                    {!loading ? (
                     <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
-                    <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Id</label>
-                            <input required className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" name='id' placeholder="Camisa blabla"></input>
-                    </div>
                         
-                        <div className=" inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
+                        <div className=" inline-block w-[270px] border-2 rounded-2xl py-1 px-2">
+                            <label className="text-xs font-sans font-semibold ml-3">Está el producto ya registrado?</label>
+                            <select onChange={handleOnChange} name='rol' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0">
+                               <option value={false}>No</option>
+                                <option value={true}>Si</option>
+                              </select> 
+                              </div>
+                              
+                    <div className="inline-block hover:border-formInputs1  w-[280px] border-2 rounded-2xl py-1 px-2">
+                            <label className="text-xs font-sans font-semibold ml-3">Id</label>
+                            <input  min="1" required={thereIs?false:true} name='id' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+
+                        <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
+                            <label className="text-xs font-sans font-semibold ml-3">Nombre del Producto</label>
+                            <input  required={thereIs?false:true}  name='nombre' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+                        
+                        <div className=" inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
+                            <label className="text-xs font-sans font-semibold ml-3">Valor por Unidad</label>
+                            <input  type='number'required={thereIs?false:true} name='valorUnitario' min="1" className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+
+                        <div className=" inline-block hover:border-formInputs1 w-[270px] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
+                            <label className="text-xs font-sans font-semibold ml-3">Categoria</label>
+                            <select ref={categoriaId} name='categoria' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0">
+                                {
+                                    categorias.map((categoria)=>( 
+                                        <option key={categoria.id} value={categoria.id} >{categoria.nombre}</option>
+                                    ))
+                                
+                                }
+                              </select>            
+                        </div>
+                        
+                        <div className=" inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
                             <label className="text-xs font-sans font-semibold ml-3">Talla-Cantidad</label>
-                            <div ref={tallasD}  className="block w-[95%] h-[60px] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 overflow-y-auto">
+                            <div ref={tallasD} className="block w-[95%] h-[60px] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 overflow-y-auto">
                                 <div className=''> 
-                                    <label className='inline'>Small</label>
+                                    <label className='inline'>S</label>
                                     <input className='w-[45px] ml-4' type="number" min="0" placeholder='24' ></input>
                                 </div>
                                 <div className=''> 
-                                    <label className='inline'>Medium</label>
-                                    <input className='w-[45px] ml-4' type="number" placeholder='224'></input>
+                                    <label className='inline'>M</label>
+                                    <input className='w-[45px] ml-4' type="number" min="0" placeholder='224'></input>
                                 </div>
                                 <div className=''> 
-                                    <label className='inline'>Large</label>
-                                    <input className='w-[45px] ml-4' type="number" placeholder='4'></input>
+                                    <label className='inline'>L</label>
+                                    <input className='w-[45px] ml-4' type="number" min="0" placeholder='4'></input>
                                 </div>
                                 <div className=''> 
-                                    <label className='inline'>X-Large</label>
-                                    <input className='w-[45px] ml-4' type="number" placeholder='244'></input>
+                                    <label className='inline'>XL</label>
+                                    <input className='w-[45px] ml-4' type="number" min="0" placeholder='244'></input>
                                 </div>
                                 <div className=''> 
-                                    <label className='inline'>XX-Large</label>
-                                    <input className='w-[45px] ml-4' type="number" placeholder='54'></input>
+                                    <label className='inline'>XXL</label>
+                                    <input className='w-[45px] ml-4' type="number" min="0" placeholder='54'></input>
                                 </div>
                             </div>
                         </div>
-                    <button className="mb-3 self-center mr-7 border-2 rounded-lg px-11 py-1 text-lg tracking-widest">+Añadir</button>
+                
+                        <div className=" inline-block hover:border-formInputs1 h-[150px] w-[90%] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
+                            <label className="text-xs font-sans font-semibold ml-3">Descripción</label>
+                            <textarea name='descripcion' className="block h-[85%] w-[95%] text-1xl font-sans font-semibold break-normal px-3 w-3/4 h-10 py-2 outline-0 break-words overflow-y-auto" placeholder="Camisa blabla"></textarea>
+                    </div>
+                                            <div className="RELLENO inline-block w-[280px] border-none rounded-2xl py-1 px-2" style={!thereIs? {display:"none"}:{display:'block'}}></div>
+                    <Button msg={"+ Añadir"}></Button>
                 </form>
-                </dialog>
+    ): <h1 className='text-4xl'>Cargando</h1>}
+            </dialog>
+      </>
+    )
+
+}
+
+
+function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setShowProdu,setRenderP, setError}) {
+
+    let feche=""
+    function parseData(date){
+        let year, month, datee ="";"";""
+
+        let fechaNacimiento=new Date(date)
+
+        if(Number(fechaNacimiento.getFullYear())<10){
+             year = "0"+(fechaNacimiento.getFullYear())
+        }else{
+            year = fechaNacimiento.getFullYear()
+        }
+
+        if(Number(fechaNacimiento.getMonth()+1)<10){
+             month = "0"+(fechaNacimiento.getMonth()+1)
+        }else{
+            month = fechaNacimiento.getFullMonth()+1
+        }
+
+        if(Number(fechaNacimiento.getDate()+1)<10){
+             datee = "0"+(fechaNacimiento.getDate()+1)
+        }else{
+            datee = fechaNacimiento.getDate()+1
+        }
+
+        fechaNacimiento=[year, month, datee].join("-")
+        return fechaNacimiento
+   }
+
+   function handleClick(){
+    setRenderP(true)
+    setDetalle(edit[1].detalleCompra)
+
+   }
+
+   function handleClose(){
+    setDialog(false)
+    if (edit[0]){
+        setEdit(false)
+    }
+}
+    
+    async function handleSubmit(event){
+        event.preventDefault()
+        const {id, fecha, pais}= Object.fromEntries(new FormData(event.currentTarget))
+        let total=0
+        for(let i=0; i<detalle.length;i++){
+            total+=detalle[i].valorTotal
+        }
+
+
+        console.log(detalle.length)
+        if(detalle.length<1){
+            setError('¡Tiene que haber productos en la compra!')
+            return
+        }
+
+        if(edit[0]){
+            await PromiseFetchPUT(`https://api-vimo-production.up.railway.app/compras`, {id,fecha,pais,detalleCompra:detalle,valorTotal:total})
+            setDetalle([])
+            setDialog(false)
+            return
+        }
+
+        let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/compras/${id}`)
+        if(!res.message){
+            console.log(res)
+            setError('Esta cedula ya existe en la base de datos')
+            return
+        }
+        res = await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/compras`,{id, fecha, pais, detalleCompra:detalle, valorTotal:total})
+
+        res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/productos`)
+        setVentas()
+        setDetalle([])
+        setDialog(false)
+    }
+
+    return (
+      <>
+      <dialog className="AMODAL container border-2 border-blue-600 rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
+        <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={handleClose} /></button>
+                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Compras</span>
+                    <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
+                        
+                    <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
+                            <label className="text-xs font-sans font-semibold ml-3">Id</label>
+                            <input required value={edit[0]? edit[1].id:null} name='id' type='number' min="1" className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+
+                        <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
+                            <label className="text-xs font-sans font-semibold ml-3">Fecha</label>
+                            <input required  defaultValue={edit[0]? feche :null} type='date' name='fecha' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+                        <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2 ml-6">
+                            <label className="text-xs font-sans font-semibold ml-3">País</label>
+                            <input required defaultValue={edit[0]? edit[1].pais :null} name='pais' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+                        <div className="RELLENO inline-block w-[280px] border-none rounded-2xl py-1 px-2"></div>
+                    <Button msg={edit[0]?"Editar":"+ Añadir"}></Button>
+                </form>
+
+                <div className='flex justify-center gap-[10px]'>
+
+                <button className="inline-block w-[280px] border-2 rounded-2xl py-3 px-2" onClick={()=>(handleClick())}>
+                            <div className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 text-center" >Ver Productos</div>
+                    </button>
+                    <button className="inline-block w-[280px] border-2 rounded-2xl py-3 px-2">
+                            <div className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 text-center" onClick={()=>(setShowProdu(true))}>+Añadir Producto</div>
+                    </button>
+                </div>
+            </dialog>
       </>
     )
 }
 
-function RenderProductos({data,setRenderP}){
+function RenderProductos({data,setRenderP, setTalla, deleteProdu}){
     return(
         <>
-        <dialog className="AMODAL container border-2 border-black rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
+        <dialog className="AMODAL container border-2 border-black rounded-2xl w-[850px] bg-Rwhite py-3 top-[15px] px-3 overflow-x-auto" open>
         <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={()=>(setRenderP(false))} /></button>
+        <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Productos</span>
         <table>
         <tr>
         <th className="rounded-tl-md">Id</th>
-        <th className="">Small</th>
-        <th className="">Medium</th>
-        <th className="">Large</th>
-        <th className="">X-Large</th>
-        <th className="rounded-tr-md">XX-Large</th>
+        <th className="">Nombre</th>
+        <th className="">Descripción</th>
+        <th className="">Categoría</th>
+        <th className="">ValorPorUnidad</th>
+        <th className="">Cantidad</th>
+        <th className="">Valor Total</th>
+        <th className="">Tallas</th>
+        {deleteProdu!=undefined && <th className="">Eliminar</th>}
     </tr>
         <tbody>
 {data.map((producto)=>( 
         <tr key={producto.id}>
             <td className="max-w-[250px] text-center break-words">{producto.id}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.tallas.Small}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.tallas.Medium}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.tallas.Large}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.tallas["X-Large"]}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.tallas["XX-Large"]}</td>  
-            
-        </tr>
+            <td className="max-w-[250px] text-center break-words">{producto.nombre}</td>
+            <td className="max-w-[250px] text-center break-words">{producto.descripcion}</td>
+            <td className="max-w-[250px] text-center break-words">{producto.categorias.nombre}</td>
+            <td className="max-w-[250px] text-center break-words">{producto.valorUnitario}</td>
+            <td className="max-w-[250px] text-center break-words">{producto.cantidad}</td>
+            <td className="max-w-[250px] text-center break-words">{producto.valorTotal}</td>
+            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faSocks} style={{color: "#404e67"}} onClick={()=>(setTalla((prev)=>([!prev[0],producto])))}  /></button></div></td>
+            {deleteProdu!=undefined && <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faTrash} style={{color: "#404e67"}} onClick={()=>(deleteProdu(data, producto.id))}  /></button></div></td>
+}
+                </tr>
 
 ))
         }
@@ -120,150 +382,36 @@ function RenderProductos({data,setRenderP}){
     )
 }
 
-function Dialog({setVentas, detalle, setDetalle, setDialog, setShowProdu,setRenderP}) {
-    
-    function handleSubmit(event){
-        event.preventDefault()
-        const {id, fecha, cedulaEmpleado, cedulaCliente}= Object.fromEntries(new FormData(event.currentTarget))
-
-        setVentas((prev)=>{
-            return(
-                [...prev,
-                {
-                    id:id,
-                    fecha:fecha,
-                    cedulaEmpleado:cedulaEmpleado,
-                    cedulaCliente:cedulaCliente,
-                    productos:detalle
-                }]
-            )
-        })
-                setDetalle([{
-            id:4545,
-            cantidad:4854,
-            tallas:{Small: 32, Medium: 0, Large: 0, 'X-Large': 0, 'XX-Large': 0},
-        }])
-
-        setDialog(false)
+function RenderData({data,setEdit, setListP, setDialog}){
+        function parseData(date){
+        let fechaNacimiento=new Date(date)
+        fechaNacimiento=[fechaNacimiento.getFullYear(), fechaNacimiento.getMonth()+1, fechaNacimiento.getDate()+1].join("-")
+        return fechaNacimiento
     }
 
-    return (
-      <>
-      <dialog className="AMODAL container border-2 border-black rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
-        <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={()=>(setDialog(false))} /></button>
-                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Ventas</span>
-                    <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
-                        
-                    <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Id</label>
-                            <input min="0" required name='id' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-
-                        <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Fecha</label>
-                            <input required type='date' name='fecha' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-
-                        <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Cedula Empleado</label>
-                            <input required name='cedulaEmpleado' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-                        <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Cedula Cliente</label>
-                            <input required name='cedulaCliente' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-                    <button className="mb-3 self-center mr-7 border-2 rounded-lg px-11 py-1 text-lg tracking-widest">+Añadir</button>
-                </form>
-                 <button className="inline-block w-[280px] border-2 rounded-2xl py-3 px-2">
-                            <div className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 text-center" placeholder="Camisa blabla" onClick={()=>(setRenderP(true))}>Ver Productos</div>
-                    </button>
-                    <button className="inline-block w-[280px] border-2 rounded-2xl py-3 px-2">
-                            <div className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 text-center" placeholder="Camisa blabla" onClick={()=>(setShowProdu(true))}>+Añadir Producto</div>
-                    </button>
-            </dialog>
-      </>
-    )
-}
-
-function DialogEdit({setVentas, edit, setEdit, setShowProdu}) {
-
-    const venta=edit[1]
-    function handleSubmit(event){
-        const {id, fecha, cedulaEmpleado, cedulaCliente}= Object.fromEntries(new FormData(event.currentTarget))
-        
-
-    setVentas((prev)=>{
-        return prev.map((prevP) => {
-            if(prevP.id===venta.id){
-                return({
-                    id:id,
-                    fecha:fecha,
-                    cedulaEmpleado:cedulaEmpleado,
-                    cedulaCliente:cedulaCliente,
-                })
-            }else{
-                return prevP
-            }
-        })
-    })
-
-    setEdit(false)
-        
-    }
-
-    return (
-        <>
-        <dialog className="AMODAL container border-2 border-black rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
-          <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={()=>(setEdit(false))} /></button>
-                      <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Ventas</span>
-                      <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
-                          
-                      <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                              <label className="text-xs font-sans font-semibold ml-3">Id</label>
-                              <input value={venta.id} min="0" required name='id' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                          </div>
-  
-                          <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                              <label className="text-xs font-sans font-semibold ml-3">Fecha</label>
-                              <input defaultValue={venta.fecha} required type='date' name='fecha' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                          </div>
-  
-                          <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                              <label className="text-xs font-sans font-semibold ml-3">Cedula Empleado</label>
-                              <input defaultValue={venta.cedulaEmpleado} required name='cedulaEmpleado' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                          </div>
-                          <div className="inline-block w-[280px] border-2 rounded-2xl py-1 px-2">
-                              <label className="text-xs font-sans font-semibold ml-3">Cedula Cliente</label>
-                              <input defaultValue={venta.cedulaCliente} required name='cedulaCliente' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                          </div>
-                          <button className="inline-block w-[280px] border-2 rounded-2xl py-3 px-2">
-                              <div className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 text-center" placeholder="Camisa blabla">Ver Productos</div>
-                      </button>
-                      <button className="inline-block w-[280px] border-2 rounded-2xl py-3 px-2">
-                              <div className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0 text-center" placeholder="Camisa blabla">+Añadir Producto</div>
-                      </button>
-                      <button className="mb-3 self-center mr-7 border-2 rounded-lg px-11 py-1 text-lg tracking-widest">Editar</button>
-                  </form>
-              </dialog>
-        </>
-      )
-}
-
-
-function RenderData({data,setEdit, setListP}){
     return(
         <>
+        <tr>
+        <th className="rounded-tl-md">Id</th>
+        <th className="">Fecha</th>
+        <th className="">Valor Total</th>
+        <th className="">País</th>
+        <th className="">Productos</th>
+        <th className="">Estado</th>
+        <th className="rounded-tr-md">Editar</th>
+    </tr>
         <tbody>
 {data.map((venta)=>(
         <tr key={venta.id}>
             <td className="max-w-[250px] text-center break-words">{venta.id}</td>
-            <td className="max-w-[250px] text-center break-words">{venta.fecha}</td>
-            <td className="max-w-[250px] text-center break-words">{venta.cedulaEmpleado}</td>
-            <td className="max-w-[250px] text-center break-words">{venta.cedulaCliente}</td>
-            <td className="max-w-[250px] text-center break-words">0</td>
-            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faSocks} style={{color: "#404e67"}} onClick={()=>(setListP((prev)=>([!prev[0],venta.productos])))}  /></button></div></td>
-            <td><div className="flex justify-center"><input type='checkbox'></input></div></td>
-            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faPen} style={{color: "#404e67"}} onClick={()=>(setEdit((prev)=>([!prev[0],venta])))} /></button></div></td>
+            <td className="max-w-[250px] text-center break-words">{parseData(venta.fecha)}</td>
+            <td className="max-w-[250px] text-center break-words">{venta.valorTotal}</td>
+            <td className="max-w-[250px] text-center break-words">{venta.pais}</td>
+            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faSocks} style={{color: "#404e67"}} onClick={()=>(setListP((prev)=>([!prev[0],venta.detalleCompra])))}  /></button></div></td>
+            <td><div className="flex justify-center"><Toggle></Toggle></div></td>
+            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faPen} style={{color: "#404e67"}} onClick={()=> {
+                setEdit((prev)=>([!prev[0],venta]))
+                setDialog((prev)=>!prev)}} /></button></div></td>
         </tr>
 
         ))
@@ -273,31 +421,62 @@ function RenderData({data,setEdit, setListP}){
     )
 }
 
+function RenderTallas({data,setTalla}){
+
+    return(
+        <>
+        <dialog className="AMODAL container border-2 border-black rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
+        <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-xl' icon={faCircleXmark} onClick={()=>(setTalla(((prev)=>!prev)))} /></button>
+            <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Producto-{data.id}</span>
+        <table className="">
+    <tr>
+        <th className="rounded-tl-md">Small</th>
+        <th className="">Medium</th>
+        <th className="">Large</th>
+        <th className="">X-Large</th>
+        <th className="rounded-tr-md">XX-Large</th>
+    </tr>
+    <tr>
+            <td className="max-w-[250px] text-center break-words">{data.tallas.S}</td>
+            <td className="max-w-[250px] text-center break-words">{data.tallas.M}</td>
+            <td className="max-w-[250px] text-center break-words">{data.tallas.L}</td>
+            <td className="max-w-[250px] text-center break-words">{data.tallas.XL}</td>
+            <td className="max-w-[250px] text-center break-words">{data.tallas.XXL}</td>    
+</tr>
+</table>
+</dialog>
+        </>
+    )
+}
+
 export default function Ventas({dialog, setDialog}) {
 
-    const[ventas, setVentas]=useState([
-        {id: '2', fecha: '2023-08-28', cedulaEmpleado: '4', cedulaCliente: '2', 
-        productos:[{id: '1', tallas: {Small: 6, Medium: 9, Large: 6, 'X-Large': 9, 'XX-Large': 264353453}}], 
-        cantidad: 5}
-    ])
-
-    const [detalle, setDetalle]=useState([
-    {
-        id:4545,
-        cantidad:4854,
-        tallas:{Small: 32, Medium: 0, Large: 0, 'X-Large': 0, 'XX-Large': 0},
-    }
-])
-
+    const[ventas, setVentas]=useState([])
+    const {data, loading} = useFetch('https://api-vimo-production.up.railway.app/pedidoVenta/ventas')
+    const [detalle, setDetalle]=useState([])
     const [edit,setEdit]=useState([false,null])
+    const [error, setError]=useState("")
+    
 
     const [showProdu,setShowProdu]=useState(false)
     const [listP, setListP]=useState([false, null])
 
-    console.log(ventas)
-
     const [renderP,setRenderP]=useState(false)
 
+    const [talla,setTalla]=useState([false,null])
+
+
+    useEffect(()=>{
+        if(data!=null){
+            setVentas(data)
+        }
+    },[data])
+
+    function deleteProdu(productos, id){
+        let newProductos= productos.filter((producto)=>(producto.id!=id))
+        setDetalle(newProductos)
+    }
+    
   return (
     <>
         <div className="CONTENT inline-flex pt-7 h-full w-[70%] grow basis-0 flex-col overflow-y-auto relative">
@@ -307,29 +486,30 @@ export default function Ventas({dialog, setDialog}) {
             </div>
 
 <div className="table-container h-96 flex flex-col">
-    {dialog &&  <Dialog detalle={detalle} setDetalle={setDetalle} setVentas={setVentas} setDialog={setDialog} setShowProdu={setShowProdu} setRenderP={setRenderP}></Dialog>}
-    {edit[0] && <DialogEdit setVentas={setVentas} edit={edit} setEdit={setEdit} setShowProdu={setShowProdu}></DialogEdit>}
-    {showProdu && <AddProdu setShowProdu={setShowProdu} setDetalle={setDetalle}></AddProdu>}
-    {listP[0] && <RenderProductos data={listP[1]} setRenderP={setListP} setShowProdu={setShowProdu} setDetalle={setDetalle}></RenderProductos>}
-    {renderP && <RenderProductos data={detalle} setRenderP={setRenderP} ></RenderProductos>}
 
+   {(dialog || renderP || listP[0]) && <div className='OVERLAY fixed w-screen h-screen top-0 left-0 opacity-25 bg-black'></div>}
+   {dialog &&  <Dialog setError={setError} detalle={detalle} edit={edit} setEdit={setEdit} setDetalle={setDetalle} setVentas={setVentas} setDialog={setDialog} setShowProdu={setShowProdu} setRenderP={setRenderP}></Dialog>}
+    
+    {showProdu && <AddProdu setShowProdu={setShowProdu} setDialog={setDialog} setDetalle={setDetalle} setError={setError}></AddProdu>}
+    {listP[0] && <RenderProductos data={listP[1]} setRenderP={setListP} setTalla={setTalla} setShowProdu={setShowProdu} setDetalle={setDetalle}></RenderProductos>}
+    {renderP && <RenderProductos data={detalle} setRenderP={setRenderP} setTalla={setTalla} deleteProdu={deleteProdu}></RenderProductos>}
+    {talla[0] && <RenderTallas data={talla[1]} setTalla={setTalla}></RenderTallas>}
+    {error!=""  && <Fail setError={setError} msg={error}></Fail>}
+
+    
 <table className="">
-    <tr>
-        <th className="rounded-tl-md">Id</th>
-        <th className="">Fecha</th>
-        <th className="">Cedula del Empleado</th>
-        <th className="">Cedula del Cliente</th>
-        <th className="">Valor Total</th>
-        <th className="">Productos</th>
-        <th className="">Estado</th>
-        <th className="rounded-tr-md">Editar</th>
-    </tr>
-    <RenderData data={ventas} setEdit={setEdit} setShowProdu={setShowProdu} setListP={setListP}></RenderData>
-
-
+{!loading ? (
+    <RenderData data={ventas} setEdit={setEdit} setShowProdu={setShowProdu} setListP={setListP} setDialog={setDialog}></RenderData>
+    ): <h1 className='text-4xl'>Cargando</h1>}
 </table>
 </div>
+
+
+
 <div className='self-center'><Pagination></Pagination></div>  
+
+
+            
         </div>
     
     </>
