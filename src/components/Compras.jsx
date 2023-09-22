@@ -300,7 +300,7 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
         }
          await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/compras`,{id, fecha, pais, detalleCompra:detalle, valorTotal:total})
         res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/compras`)
-        setVentas(res.allData)
+        setVentas(res)
         setDetalle([])
         setDialog(false)
     }
@@ -386,6 +386,7 @@ function RenderProductos({data,setRenderP, setTalla, deleteProdu}){
 }
 
 function RenderData({data,setEdit, setListP, setDialog}){
+    
         function parseData(date){
         let fechaNacimiento=new Date(date)
         fechaNacimiento=[fechaNacimiento.getFullYear(), fechaNacimiento.getMonth()+1, fechaNacimiento.getDate()+1].join("-")
@@ -479,7 +480,6 @@ export default function Compras({dialog, setDialog}) {
         let newProductos= productos.filter((producto)=>(producto.id!=id))
         setDetalle(newProductos)
     }
-    
   return (
     <>
         <div className="CONTENT inline-flex pt-7 h-full w-[70%] grow basis-0 flex-col overflow-y-auto relative">
