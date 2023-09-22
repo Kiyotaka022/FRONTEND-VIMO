@@ -1,37 +1,51 @@
-import './table.css'
+import './table.css';
 import Button from './Button'
-import Pagination from './Pagination'
 import Toggle from './Toggle.jsx'
+import Pagination from './Pagination';
+import Fail from './FailMenssage'
+
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faCircleXmark } from '@fortawesome/free-solid-svg-icons'
-import {useState } from 'react'
+import {useEffect, useState } from 'react';
+
+import { useFetch } from '../hooks/useFetch';
+import { PromiseFetchGET, PromiseFetchPOST, PromiseFetchPUT } from '../logic/fetchs';
 
 
-function Dialog({setCategorias, setDialog}) {
+function Dialog({setAbonos, setDialog, setEdit, setError, edit}) {
 
-    function handleSubmit(event){
+    async function handleSubmit(event){
         event.preventDefault()
-        const {id, codigoPedido, valor}= Object.fromEntries(new FormData(event.currentTarget))
+        const {id, idVentaPedido, valorAbonado}= Object.fromEntries(new FormData(event.currentTarget))
 
         const date = new Date();
         let day = date.getDate();
         let month = date.getMonth() + 1;
         let year = date.getFullYear();
-        let currentDate = `${day}-${month}-${year}`;
+        let fecha = `${day}-${month}-${year}`;
+
+        let res=null
+        if(edit[0]){
+            res = await PromiseFetchPUT(`https://api-vimo-production.up.railway.app/abonos`,{id, idVentaPedido, valorAbonado, fecha})
+        } else{
+                    
+         res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/abonos/${id}`)
+        if(res.one!=null){
+            setError('Este Id ya existe en la base de datos')
+            return
+        }
+        res = await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/abonos`,{id, idVentaPedido, valorAbonado, fecha})
+        console.log(res)
+
+        }
+        res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/abonos`)
+        setDialog(false)
+        setEdit(false)
+        setAbonos(res.allData)
 
 
         
-        setCategorias((prev)=>{
-            return(
-                [...prev,
-                {
-                    id:id,
-                    fecha:currentDate,
-                    valor:valor,
-                    codigoPedido:codigoPedido
-                }]
-            )
-        })
 
         setDialog(false)
     }
@@ -51,13 +65,13 @@ function Dialog({setCategorias, setDialog}) {
 
                     <div className=" inline-block w-[280px] border-2 hover:border-formInputs1  rounded-2xl py-1 px-2">
                             <label className="text-xs font-sans font-semibold ml-3">valor a Abonar</label>
-                            <input required type="number" min="0" name='valor' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
+                            <input required type="number" min="0" name='valorAbonado' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
                     </div>
 
 
                     <div className=" inline-block w-[280px] border-2 hover:border-formInputs1 rounded-2xl py-1 px-2">
                             <label className="text-xs font-sans font-semibold ml-3">Código del Pedido</label>
-                            <input required type="number" min="0" name='codigoPedido' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
+                            <input required type="number" min="0" name='idVentaPedido' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
                     </div>
                         <div className=" inline-block w-[280px] border-none rounded-2xl py-1 px-2">
                             <label className="text-xs font-sans font-semibold ml-3"></label>
@@ -70,63 +84,6 @@ function Dialog({setCategorias, setDialog}) {
     )
 }
 
-function DialogEdit({setCategorias, edit, setEdit}) {
-    const categoria=edit[1]
-    
-    function handleSubmit(event){
-        event.preventDefault()
-        const {codigoPedido, valor}= Object.fromEntries(new FormData(event.currentTarget))
-
-    setCategorias((prev)=>{
-        return prev.map((prevP) => {
-            if(prevP.id===categoria.id){
-                return({
-                    ...prevP,
-                    valor:valor,
-                    codigoPedido:codigoPedido
-                })
-            }else{
-                return prevP
-            }
-        })
-    })
-
-    setEdit(false)
-        
-    }
-
-    return (
-      <>
-      <dialog className="AMODAL container border-2 border-blue-700 rounded-2xl w-[650px] bg-Rwhite py-3 top-[10px]" open>
-      <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-xl' icon={faCircleXmark} onClick={()=>(setEdit(((prev)=>!prev)))} /></button>
-                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Abono</span>
-                    <form className="bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
-                    <div className=" inline-block w-[280px] border-2 hover:border-formInputs1 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Id</label>
-                            <input value={categoria.id} required type="number" name='id' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
-                    </div>
-
-                    <div className=" inline-block w-[280px] border-2 hover:border-formInputs1 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">valor a Abonar</label>
-                            <input defaultValue={categoria.valor} required type="number" name='valor' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
-                    </div>
-
-                    <div className=" inline-block w-[280px] border-2 hover:border-formInputs1 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Fecha</label>
-                            <input value={categoria.fecha} required name='fecha' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
-                    </div>
-
-                    <div className=" inline-block w-[280px] border-2 hover:border-formInputs1 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Código del Pedido</label>
-                            <input value={categoria.codigoPedido} required name='codigoPedido' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="1,352,2,4"></input>
-                    </div>
-                    <Button msg={"Editar"}></Button>
-                </form>
-            </dialog>
-      </>
-    )
-}
-
 function RenderData({data, setEdit}){
     return(
         <>
@@ -134,9 +91,9 @@ function RenderData({data, setEdit}){
 {        data.map((categoria)=>(
         <tr key={categoria.id}>
             <td className="max-w-[250px] text-center break-words">{categoria.id}</td>
-            <td className="max-w-[250px] text-center break-words">{categoria.valor}</td>
+            <td className="max-w-[250px] text-center break-words">{categoria.valorAbonado}</td>
             <td className="max-w-[250px] text-center break-words">{categoria.fecha}</td>
-            <td className="max-w-[250px] text-center break-words">{categoria.codigoPedido}</td>
+            <td className="max-w-[250px] text-center break-words">{categoria.idVentaPedido}</td>
             <td><div className="flex justify-center"><Toggle></Toggle></div></td>
             <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faPen} style={{color: "#404e67"}} onClick={()=>(setEdit((prev)=>([!prev[0],categoria])))} /></button></div></td>
         </tr>
@@ -150,9 +107,20 @@ function RenderData({data, setEdit}){
 
 
 export default function Abonos({dialog, setDialog}) {
-    const[categorias, setCategorias]=useState([
-    ])  
+    const {data, loading} = useFetch('https://api-vimo-production.up.railway.app/abonos')
     const [edit,setEdit]=useState([false,null])
+    const[abonos, setAbonos]=useState([]) 
+    const [error, setError]=useState("")
+
+
+    
+
+    useEffect(()=>{
+        if(data!=null){
+
+            setAbonos(data.allData)
+        }
+    },[data])
 
   return (
     <>
@@ -163,8 +131,9 @@ export default function Abonos({dialog, setDialog}) {
             </div>
 
 <div className="table-container h-96 flex flex-col">
-    {dialog && <Dialog setCategorias={setCategorias} setDialog={setDialog}></Dialog>}
-    {edit[0] && <DialogEdit setCategorias={setCategorias} edit={edit} setEdit={setEdit}></DialogEdit>}
+    {(dialog || edit[0]) && <div className='OVERLAY fixed w-screen h-screen top-0 left-0 opacity-25 bg-black'></div>}
+    {(dialog || edit[0])  && <Dialog setAbonos={setAbonos} setDialog={setDialog} setEdit={setEdit} edit={edit} setError={setError}></Dialog>}
+    {error!=""  && <Fail setError={setError} msg={error}></Fail>}
 
 
 <table className="">
@@ -176,8 +145,9 @@ export default function Abonos({dialog, setDialog}) {
         <th className="text-2xl">Estado</th>
         <th className="rounded-tr-md">Editar</th>
     </tr>
-
-    <RenderData data={categorias} setEdit={setEdit}></RenderData>
+    {!loading ? (
+        <RenderData data={abonos} setEdit={setEdit}></RenderData>
+    ): <h1 className='text-4xl'>Cargando</h1>}
 </table>
 
 </div>  

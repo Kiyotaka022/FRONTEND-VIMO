@@ -12,12 +12,11 @@ import { useFetch } from '../hooks/useFetch';
 import { PromiseFetchGET, PromiseFetchPOST, PromiseFetchPUT } from '../logic/fetchs';
 
 
-function AddProdu({setDetalle, setShowProdu, setDialog, setError}) {
+function AddProdu({setDetalle, setShowProdu, setDialog, setError, showProdu, edit, setEdit, detalle}) {
     const tallasD = useRef(null)
     const categoriaId = useRef(null)
     const [loading, setLoading]= useState(true)
     const [categorias, setCategorias]= useState([])
-    const [thereIs, setThereIS] = useState(false)
 
     if(loading===true){
         getCategorias()
@@ -32,64 +31,8 @@ function AddProdu({setDetalle, setShowProdu, setDialog, setError}) {
             setLoading(false)
     }
 
-    function handleOnChange(event){
-        setThereIS((prev)=>(!prev)) 
-      }
-
     async function handleSubmit(event){
         event.preventDefault()
-        if(!thereIs){
-            
-        const {id, nombre, valorUnitario, categoria, descripcion}= Object.fromEntries(new FormData(event.currentTarget))
-        const inputs=tallasD.current.querySelectorAll('input');
-        const medidas=tallasD.current.querySelectorAll('label');
-        const tallas={}
-        let cantidad=0
-        let zeros=0
-        for(let i=0; i<inputs.length;i++){
-            tallas[medidas[i].innerText]=Number(inputs[i].value)
-            cantidad+=tallas[medidas[i].innerText]
-            if(Number(inputs[i].value)===0){
-                zeros+=1
-            }
-        }
-        
-        let categoriad = categoriaId.current.value
-        if(zeros===inputs.length){
-            setError("Selecciona al menos una talla")
-            return
-        }
-
-             let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/productos/${id}`)
-    if(res.message!="Producto no encontrado"){
-        console.log("A")
-        setError('Este Id de producto ya existe en la base de datos')
-        return
-    }
-
-     res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/categorias/${categoriad}`)
-
-
-    setDetalle((prev)=>{
-            return(
-                [...prev,
-                {
-                    id:id,
-                    nombre:nombre,
-                    descripcion:descripcion,
-                    valorUnitario:valorUnitario,
-                    categoria:categoriad,
-                    categorias:{id:res.one.id, nombre:res.one.nombre},
-                    cantidad:cantidad,
-                    tallas:tallas,
-                    estadoProducto:true,
-                    valorTotal:(Number(cantidad)*Number(valorUnitario))
-                }]
-            )
-        })
-
-    setShowProdu(false)
-        }else{
             const {id}= Object.fromEntries(new FormData(event.currentTarget))
             const inputs=tallasD.current.querySelectorAll('input');
             const medidas=tallasD.current.querySelectorAll('label');
@@ -117,9 +60,7 @@ function AddProdu({setDetalle, setShowProdu, setDialog, setError}) {
         }
         let valorUnitario= res.one[0].valorUnitario
 
-        console.log(res)
-
-        setDetalle((prev)=>{
+                    setDetalle((prev)=>{
                 return(
                     [...prev,
                     {
@@ -131,55 +72,28 @@ function AddProdu({setDetalle, setShowProdu, setDialog, setError}) {
                     }]
                 )
             })
+        
+
+            console.log(detalle)
     
         setShowProdu(false)
 
 
 
-        }
+        
     }
 
 return (
       <>
-      <dialog className="AMODAL container border-2 border-blue-600 rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
+            <div className='OVERLAY fixed w-screen h-screen top-0 left-0 opacity-25 bg-black z-[5]'></div>
+      <dialog className="AMODAL container border-2 border-blue-600 rounded-2xl w-[650px] bg-Rwhite py-4 top-[15px] z-[10]" open>
         <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={handleClose}/></button>
                     <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Producto</span>
                     {!loading ? (
                     <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
-                        
-                        <div className=" inline-block w-[270px] border-2 rounded-2xl py-1 px-2">
-                            <label className="text-xs font-sans font-semibold ml-3">Está el producto ya registrado?</label>
-                            <select onChange={handleOnChange} name='rol' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0">
-                               <option value={false}>No</option>
-                                <option value={true}>Si</option>
-                              </select> 
-                              </div>
-                              
-                    <div className="inline-block hover:border-formInputs1  w-[280px] border-2 rounded-2xl py-1 px-2">
+                    <div className="inline-block hover:border-formInputs1  w-[280px] border-2 rounded-2xl py-1 px-2 ">
                             <label className="text-xs font-sans font-semibold ml-3">Id</label>
-                            <input  min="1" required={thereIs?false:true} name='id' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-
-                        <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
-                            <label className="text-xs font-sans font-semibold ml-3">Nombre del Producto</label>
-                            <input  required={thereIs?false:true}  name='nombre' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-                        
-                        <div className=" inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
-                            <label className="text-xs font-sans font-semibold ml-3">Valor por Unidad</label>
-                            <input  type='number'required={thereIs?false:true} name='valorUnitario' min="1" className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
-                        </div>
-
-                        <div className=" inline-block hover:border-formInputs1 w-[270px] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
-                            <label className="text-xs font-sans font-semibold ml-3">Categoria</label>
-                            <select ref={categoriaId} name='categoria' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0">
-                                {
-                                    categorias.map((categoria)=>( 
-                                        <option key={categoria.id} value={categoria.id} >{categoria.nombre}</option>
-                                    ))
-                                
-                                }
-                              </select>            
+                            <input  min="1"   name='id' type='number' className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
                         </div>
                         
                         <div className=" inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
@@ -207,12 +121,6 @@ return (
                                 </div>
                             </div>
                         </div>
-                
-                        <div className=" inline-block hover:border-formInputs1 h-[150px] w-[90%] border-2 rounded-2xl py-1 px-2" style={thereIs? {display:"none"}:{display:'inline-block'}}>
-                            <label className="text-xs font-sans font-semibold ml-3">Descripción</label>
-                            <textarea name='descripcion' className="block h-[85%] w-[95%] text-1xl font-sans font-semibold break-normal px-3 w-3/4 h-10 py-2 outline-0 break-words overflow-y-auto" placeholder="Camisa blabla"></textarea>
-                    </div>
-                                            <div className="RELLENO inline-block w-[280px] border-none rounded-2xl py-1 px-2" style={!thereIs? {display:"none"}:{display:'block'}}></div>
                     <Button msg={"+ Añadir"}></Button>
                 </form>
     ): <h1 className='text-4xl'>Cargando</h1>}
@@ -252,11 +160,15 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
         fechaNacimiento=[year, month, datee].join("-")
         return fechaNacimiento
    }
+   useEffect(()=>{
+    setDetalle(edit[1].detalleVentaPedido)
+},[edit[0]])
 
+   if(edit[0]){
+    feche= parseData(edit[1].fecha)
+}
    function handleClick(){
     setRenderP(true)
-    setDetalle(edit[1].detalleCompra)
-
    }
 
    function handleClose(){
@@ -268,37 +180,35 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
     
     async function handleSubmit(event){
         event.preventDefault()
-        const {id, fecha, pais}= Object.fromEntries(new FormData(event.currentTarget))
+        const {id, fecha, pais, cedulaEmpleado, cedulaCliente}= Object.fromEntries(new FormData(event.currentTarget))
         let total=0
         for(let i=0; i<detalle.length;i++){
             total+=detalle[i].valorTotal
         }
-
-
-        console.log(detalle.length)
+        console.log(detalle)
         if(detalle.length<1){
-            setError('¡Tiene que haber productos en la compra!')
+            setError('¡Tiene que haber productos en la venta!')
             return
         }
-
         if(edit[0]){
-            await PromiseFetchPUT(`https://api-vimo-production.up.railway.app/compras`, {id,fecha,pais,detalleCompra:detalle,valorTotal:total})
+            await PromiseFetchPUT(`https://api-vimo-production.up.railway.app/pedidoVenta`, {id, fecha, pais, cedulaEmpleado, cedulaCliente, detalleVentaPedido:detalle, estado:true, montoAdeudado:0,  valorTotal:total, concepto:"venta"})
             setDetalle([])
             setDialog(false)
+            setEdit([false,null])
             return
         }
 
-        let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/compras/${id}`)
-        if(!res.message){
+        let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/pedidoVenta/${id}`)
+        if(res.one!=null){
             console.log(res)
-            setError('Esta cedula ya existe en la base de datos')
+            setError('Este id ya existe en la base de datos')
             return
         }
-        res = await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/compras`,{id, fecha, pais, detalleCompra:detalle, valorTotal:total})
-
-        res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/productos`)
-        setVentas()
+         await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/pedidoVenta`,{id, fecha, pais, cedulaEmpleado, cedulaCliente, detalleVentaPedido:detalle, estado:true, montoAdeudado:0,  valorTotal:total, concepto:"venta"})
+        res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/pedidoVenta/ventas`)
+        setVentas(res.allData)
         setDetalle([])
+        setEdit([false,null])
         setDialog(false)
     }
 
@@ -306,12 +216,22 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
       <>
       <dialog className="AMODAL container border-2 border-blue-600 rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
         <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={handleClose} /></button>
-                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Compras</span>
+                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">{edit[0]? "Editar Venta":"Venta"}</span>
                     <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
                         
                     <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
                             <label className="text-xs font-sans font-semibold ml-3">Id</label>
                             <input required value={edit[0]? edit[1].id:null} name='id' type='number' min="1" className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+
+                        <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
+                            <label className="text-xs font-sans font-semibold ml-3">Cedula Empleado</label>
+                            <input required defaultValue={edit[0]? edit[1].cedulaEmpleado:null} name='cedulaEmpleado' type='number' min="1" className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
+                        </div>
+
+                        <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
+                            <label className="text-xs font-sans font-semibold ml-3">Cedula Cliente</label>
+                            <input required defaultValue={edit[0]? edit[1].cedulaCliente:null} name='cedulaCliente' type='number' min="1" className="block w-[95%] text-1xl font-sans font-semibold px-3 w-3/4 h-10 py-2 outline-0" placeholder="Camisa blabla"></input>
                         </div>
 
                         <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">
@@ -349,12 +269,12 @@ function RenderProductos({data,setRenderP, setTalla, deleteProdu}){
         <table>
         <tr>
         <th className="rounded-tl-md">Id</th>
-        <th className="">Nombre</th>
-        <th className="">Descripción</th>
+        <th className="">cantidad</th>
+       {/* <th className="">Descripción</th>
         <th className="">Categoría</th>
         <th className="">ValorPorUnidad</th>
         <th className="">Cantidad</th>
-        <th className="">Valor Total</th>
+        <th className="">Valor Total</th>*/}
         <th className="">Tallas</th>
         {deleteProdu!=undefined && <th className="">Eliminar</th>}
     </tr>
@@ -362,12 +282,12 @@ function RenderProductos({data,setRenderP, setTalla, deleteProdu}){
 {data.map((producto)=>( 
         <tr key={producto.id}>
             <td className="max-w-[250px] text-center break-words">{producto.id}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.nombre}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.descripcion}</td>
+            <td className="max-w-[250px] text-center break-words">{producto.cantidad}</td>
+           {/*} <td className="max-w-[250px] text-center break-words">{producto.descripcion}</td>
             <td className="max-w-[250px] text-center break-words">{producto.categorias.nombre}</td>
             <td className="max-w-[250px] text-center break-words">{producto.valorUnitario}</td>
             <td className="max-w-[250px] text-center break-words">{producto.cantidad}</td>
-            <td className="max-w-[250px] text-center break-words">{producto.valorTotal}</td>
+<td className="max-w-[250px] text-center break-words">{producto.valorTotal}</td>*/}
             <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faSocks} style={{color: "#404e67"}} onClick={()=>(setTalla((prev)=>([!prev[0],producto])))}  /></button></div></td>
             {deleteProdu!=undefined && <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faTrash} style={{color: "#404e67"}} onClick={()=>(deleteProdu(data, producto.id))}  /></button></div></td>
 }
@@ -383,19 +303,20 @@ function RenderProductos({data,setRenderP, setTalla, deleteProdu}){
 }
 
 function RenderData({data,setEdit, setListP, setDialog}){
+    console.log(data)
         function parseData(date){
         let fechaNacimiento=new Date(date)
         fechaNacimiento=[fechaNacimiento.getFullYear(), fechaNacimiento.getMonth()+1, fechaNacimiento.getDate()+1].join("-")
         return fechaNacimiento
     }
-
     return(
         <>
         <tr>
         <th className="rounded-tl-md">Id</th>
         <th className="">Fecha</th>
+        <th className="">Cedula Empleado</th>
+        <th className="">Cedula Cliente</th>
         <th className="">Valor Total</th>
-        <th className="">País</th>
         <th className="">Productos</th>
         <th className="">Estado</th>
         <th className="rounded-tr-md">Editar</th>
@@ -405,9 +326,10 @@ function RenderData({data,setEdit, setListP, setDialog}){
         <tr key={venta.id}>
             <td className="max-w-[250px] text-center break-words">{venta.id}</td>
             <td className="max-w-[250px] text-center break-words">{parseData(venta.fecha)}</td>
+            <td className="max-w-[250px] text-center break-words">{venta.cedulaEmpleado}</td>
+            <td className="max-w-[250px] text-center break-words">{venta.cedulaCliente}</td>
             <td className="max-w-[250px] text-center break-words">{venta.valorTotal}</td>
-            <td className="max-w-[250px] text-center break-words">{venta.pais}</td>
-            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faSocks} style={{color: "#404e67"}} onClick={()=>(setListP((prev)=>([!prev[0],venta.detalleCompra])))}  /></button></div></td>
+            <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faSocks} style={{color: "#404e67"}} onClick={()=>(setListP((prev)=>([!prev[0],venta.detalleVentaPedido])))}  /></button></div></td>
             <td><div className="flex justify-center"><Toggle></Toggle></div></td>
             <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faPen} style={{color: "#404e67"}} onClick={()=> {
                 setEdit((prev)=>([!prev[0],venta]))
@@ -476,7 +398,6 @@ export default function Ventas({dialog, setDialog}) {
         let newProductos= productos.filter((producto)=>(producto.id!=id))
         setDetalle(newProductos)
     }
-    
   return (
     <>
         <div className="CONTENT inline-flex pt-7 h-full w-[70%] grow basis-0 flex-col overflow-y-auto relative">
@@ -490,7 +411,7 @@ export default function Ventas({dialog, setDialog}) {
    {(dialog || renderP || listP[0]) && <div className='OVERLAY fixed w-screen h-screen top-0 left-0 opacity-25 bg-black'></div>}
    {dialog &&  <Dialog setError={setError} detalle={detalle} edit={edit} setEdit={setEdit} setDetalle={setDetalle} setVentas={setVentas} setDialog={setDialog} setShowProdu={setShowProdu} setRenderP={setRenderP}></Dialog>}
     
-    {showProdu && <AddProdu setShowProdu={setShowProdu} setDialog={setDialog} setDetalle={setDetalle} setError={setError}></AddProdu>}
+    {showProdu && <AddProdu setShowProdu={setShowProdu} setDialog={setDialog} setDetalle={setDetalle} setError={setError} showProdu={showProdu} edit={edit} setEdit={setEdit} detalle={detalle}></AddProdu>}
     {listP[0] && <RenderProductos data={listP[1]} setRenderP={setListP} setTalla={setTalla} setShowProdu={setShowProdu} setDetalle={setDetalle}></RenderProductos>}
     {renderP && <RenderProductos data={detalle} setRenderP={setRenderP} setTalla={setTalla} deleteProdu={deleteProdu}></RenderProductos>}
     {talla[0] && <RenderTallas data={talla[1]} setTalla={setTalla}></RenderTallas>}

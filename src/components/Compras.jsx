@@ -253,6 +253,10 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
         return fechaNacimiento
    }
 
+   if(edit[0]){
+    feche= parseData(edit[1].fecha)
+}
+
    function handleClick(){
     setRenderP(true)
     setDetalle(edit[1].detalleCompra)
@@ -291,13 +295,12 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
         let res= await PromiseFetchGET(`https://api-vimo-production.up.railway.app/compras/${id}`)
         if(!res.message){
             console.log(res)
-            setError('Esta cedula ya existe en la base de datos')
+            setError('Este id ya existe en la base de datos')
             return
         }
-        res = await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/compras`,{id, fecha, pais, detalleCompra:detalle, valorTotal:total})
-
-        res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/productos`)
-        setVentas()
+         await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/compras`,{id, fecha, pais, detalleCompra:detalle, valorTotal:total})
+        res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/compras`)
+        setVentas(res.allData)
         setDetalle([])
         setDialog(false)
     }
@@ -306,7 +309,7 @@ function Dialog({setVentas, detalle, edit, setEdit, setDetalle, setDialog, setSh
       <>
       <dialog className="AMODAL container border-2 border-blue-600 rounded-2xl w-[650px] bg-Rwhite py-3 top-[15px]" open>
         <button className='ml-auto mr-[10px] block'><FontAwesomeIcon className='fa-2xl' icon={faCircleXmark} onClick={handleClose} /></button>
-                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">Compras</span>
+                    <span className="block text-4xl font-sans font-semibold text-center mb-[30px]">{edit[0]? "Editar Compra":"Compra"}</span>
                     <form className=" bg-Rwhite rounded-2xl py-2 px-3 flex items-start flex-wrap content-start gap-y-4 gap-x-4 justify-center" onSubmit={handleSubmit}>
                         
                     <div className="inline-block hover:border-formInputs1 w-[280px] border-2 rounded-2xl py-1 px-2">

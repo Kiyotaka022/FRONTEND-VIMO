@@ -8,7 +8,7 @@ export default function Fail({msg, setError, dark}){
         dark=false
     }
     return(
-    <dialog id="defaultModal" open className= 'w-[40%] bg-slate-100 rounded-lg mt-[2%]' style={dark? {"background-color":"#1f2937", "border":"none", "color":"white"}:{"color":"black"}}>
+    <dialog id="defaultModal" open className= 'w-[40%] bg-slate-100 rounded-lg mt-[2%] z-50' style={dark? {"background-color":"#1f2937", "border":"none", "color":"white"}:{"color":"black"}}>
       <div className="w-full rounded-lg border-2 shadow bg-slate-100 border-blue-700 py-[50px] px-[80px] flex flex-col" style={dark? {"background-color":"#1f2937", "border":"none"}:{"color":"black"}}>
       <FontAwesomeIcon className='fa-6x' icon={faCircleExclamation} style={{color: "#FF0000",}} />
           <div className="rounded-lg p-6 space-y-4 md:space-y-6 sm:p-8">
