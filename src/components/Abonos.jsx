@@ -14,18 +14,43 @@ import { PromiseFetchGET, PromiseFetchPOST, PromiseFetchPUT } from '../logic/fet
 
 
 function Dialog({setAbonos, setDialog, setEdit, setError, edit}) {
+    let feche=""
+    function parseData(date){
+        let year, month, datee ="";"";""
+
+        let fechaNacimiento=new Date(date)
+
+        if(Number(fechaNacimiento.getFullYear())<10){
+             year = "0"+(fechaNacimiento.getFullYear())
+        }else{
+            year = fechaNacimiento.getFullYear()
+        }
+
+        if(Number(fechaNacimiento.getMonth()+1)<10){
+             month = "0"+(fechaNacimiento.getMonth()+1)
+        }else{
+            month = fechaNacimiento.getFullMonth()+1
+        }
+
+        if(Number(fechaNacimiento.getDate()+1)<10){
+             datee = "0"+(fechaNacimiento.getDate()+1)
+        }else{
+            datee = fechaNacimiento.getDate()+1
+        }
+
+        fechaNacimiento=[year, month, datee].join("-")
+        return fechaNacimiento
+   }
 
     async function handleSubmit(event){
         event.preventDefault()
         const {id, idVentaPedido, valorAbonado}= Object.fromEntries(new FormData(event.currentTarget))
 
         const date = new Date();
-        let day = date.getDate();
-        let month = date.getMonth() + 1;
-        let year = date.getFullYear();
-        let fecha = `${day}-${month}-${year}`;
+        let fecha=parseData(date)
 
         let res=null
+        console.log(edit)
         if(edit[0]){
             res = await PromiseFetchPUT(`https://api-vimo-production.up.railway.app/abonos`,{id, idVentaPedido, valorAbonado, fecha})
         } else{
@@ -35,18 +60,14 @@ function Dialog({setAbonos, setDialog, setEdit, setError, edit}) {
             setError('Este Id ya existe en la base de datos')
             return
         }
-        res = await PromiseFetchPOST(`https://api-vimo-production.up.railway.app/abonos`,{id, idVentaPedido, valorAbonado, fecha})
+        res = await PromiseFetchPOST(`https://api-vimo.onrender.com/abonos`,{id, idVentaPedido, valorAbonado, fecha})
         console.log(res)
 
         }
         res = await PromiseFetchGET(`https://api-vimo-production.up.railway.app/abonos`)
         setDialog(false)
-        setEdit(false)
+        setEdit([false,null])
         setAbonos(res.allData)
-
-
-        
-
         setDialog(false)
     }
 
@@ -85,6 +106,32 @@ function Dialog({setAbonos, setDialog, setEdit, setError, edit}) {
 }
 
 function RenderData({data, setEdit}){
+    function parseData(date){
+        let year, month, datee ="";"";""
+
+        let fechaNacimiento=new Date(date)
+
+        if(Number(fechaNacimiento.getFullYear())<10){
+             year = "0"+(fechaNacimiento.getFullYear())
+        }else{
+            year = fechaNacimiento.getFullYear()
+        }
+
+        if(Number(fechaNacimiento.getMonth()+1)<10){
+             month = "0"+(fechaNacimiento.getMonth()+1)
+        }else{
+            month = fechaNacimiento.getFullMonth()+1
+        }
+
+        if(Number(fechaNacimiento.getDate()+1)<10){
+             datee = "0"+(fechaNacimiento.getDate()+1)
+        }else{
+            datee = fechaNacimiento.getDate()+1
+        }
+
+        fechaNacimiento=[year, month, datee].join("-")
+        return fechaNacimiento
+   }
     return(
         <>
         <tbody>
@@ -92,7 +139,7 @@ function RenderData({data, setEdit}){
         <tr key={categoria.id}>
             <td className="max-w-[250px] text-center break-words">{categoria.id}</td>
             <td className="max-w-[250px] text-center break-words">{categoria.valorAbonado}</td>
-            <td className="max-w-[250px] text-center break-words">{categoria.fecha}</td>
+            <td className="max-w-[250px] text-center break-words">{parseData(categoria.fecha)}</td>
             <td className="max-w-[250px] text-center break-words">{categoria.idVentaPedido}</td>
             <td><div className="flex justify-center"><Toggle></Toggle></div></td>
             <td><div className="flex justify-center"><button><FontAwesomeIcon className='fa-lg' icon={faPen} style={{color: "#404e67"}} onClick={()=>(setEdit((prev)=>([!prev[0],categoria])))} /></button></div></td>
